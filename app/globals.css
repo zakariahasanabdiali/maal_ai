@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Maal-AI light theme — Off White background, Dark Forest Green primary */
+    --background: 210 17% 95%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 142 49% 20%;          /* Dark Forest Green #1A4D2E */
+    --primary-foreground: 40 100% 74%; /* gold text on forest */
+
+    --secondary: 142 22% 38%;        /* Green #4F6F52 */
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 40 100% 67%;           /* Gold #FFC857 */
+    --accent-foreground: 142 49% 14%;
+
+    --muted: 210 16% 90%;
+    --muted-foreground: 215 16% 42%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 52% 28%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 210 14% 84%;
+    --input: 210 14% 84%;
+    --ring: 142 49% 20%;
+
+    --chart-1: 142 49% 28%;
+    --chart-2: 142 22% 48%;
+    --chart-3: 40 100% 67%;
+    --chart-4: 200 70% 50%;
+    --chart-5: 0 72% 55%;
+
+    --radius: 0.85rem;
+  }
+
+  .dark {
+    --background: 222 47% 9%;        /* #0F172A */
+    --foreground: 210 20% 92%;
+    --card: 222 44% 12%;
+    --card-foreground: 210 20% 92%;
+    --popover: 222 44% 12%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 40 100% 67%;          /* Gold becomes primary in dark for pop */
+    --primary-foreground: 142 49% 14%;
+
+    --secondary: 142 30% 26%;        /* forest green muted */
+    --secondary-foreground: 210 20% 92%;
+
+    --accent: 142 49% 28%;
+    --accent-foreground: 40 100% 80%;
+
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 18% 62%;
+
+    --destructive: 0 62% 42%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 142 45% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 90% 55%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 222 30% 20%;
+    --input: 222 30% 22%;
+    --ring: 40 100% 67%;
+
+    --chart-1: 40 100% 67%;
+    --chart-2: 142 40% 45%;
+    --chart-3: 142 22% 55%;
+    --chart-4: 200 65% 55%;
+    --chart-5: 0 62% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+  .bg-grid-fade {
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px) saturate(160%);
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+  }
+}
+
+/* Custom keyframes beyond shadcn defaults */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}

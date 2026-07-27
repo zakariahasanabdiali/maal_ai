@@ -176,7 +176,7 @@ export default function ContributionDetailPage() {
             </div>
             <Separator className="my-4" />
             <Button asChild variant="outline" className="w-full">
-              <Link href="/members">
+              <Link href="/dashboard/members">
                 <Users className="mr-1.5 h-4 w-4" /> View member profile
               </Link>
             </Button>
@@ -194,7 +194,7 @@ export default function ContributionDetailPage() {
             </div>
             <Separator className="my-4" />
             <Button asChild variant="outline" className="w-full">
-              <Link href="/community">View group details</Link>
+              <Link href="/dashboard/community">View group details</Link>
             </Button>
           </Card>
 
@@ -219,7 +219,7 @@ export default function ContributionDetailPage() {
 function BackLink() {
   return (
     <Button asChild variant="ghost" size="sm" className="-ml-2">
-      <Link href="/contributions">
+      <Link href="/dashboard/contributions">
         <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to contributions
       </Link>
     </Button>

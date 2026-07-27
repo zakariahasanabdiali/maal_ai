@@ -69,7 +69,7 @@ export default function DashboardPage() {
         description="Welcome back, Aamina — here's your financial overview."
         actions={
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-            <Link href="/reports">View reports</Link>
+            <Link href="/dashboard/reports">View reports</Link>
           </Button>
         }
       />
@@ -285,7 +285,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold">Recent Transactions</h3>
             <Button asChild variant="ghost" size="sm">
-              <Link href="/transactions">
+              <Link href="/dashboard/transactions">
                 View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -330,7 +330,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold">Saving Goals</h3>
             <Button asChild variant="ghost" size="sm">
-              <Link href="/savings">
+              <Link href="/dashboard/savings">
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>

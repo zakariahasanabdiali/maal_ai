@@ -21,22 +21,22 @@ export interface NavItem {
 
 export const dashboardNav: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'AI Assistant', href: '/ai-assistant', icon: Sparkles, badge: 'AI' },
-  { label: 'Contributions', href: '/contributions', icon: HandCoins },
-  { label: 'Transactions', href: '/transactions', icon: ArrowLeftRight },
-  { label: 'Budget', href: '/budget', icon: Wallet },
-  { label: 'Savings', href: '/savings', icon: PiggyBank },
-  { label: 'Community', href: '/community', icon: Users },
-  { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { label: 'Reports', href: '/reports', icon: BarChart3 },
-  { label: 'Notifications', href: '/notifications', icon: Bell },
-  { label: 'Settings', href: '/settings', icon: Settings },
+  { label: 'AI Assistant', href: '/dashboard/ai-assistant', icon: Sparkles, badge: 'AI' },
+  { label: 'Contributions', href: '/dashboard/contributions', icon: HandCoins },
+  { label: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
+  { label: 'Budget', href: '/dashboard/budget', icon: Wallet },
+  { label: 'Savings', href: '/dashboard/savings', icon: PiggyBank },
+  { label: 'Community', href: '/dashboard/community', icon: Users },
+  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
+  { label: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export const mobileNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'AI', href: '/ai-assistant', icon: Sparkles },
-  { label: 'Contributions', href: '/contributions', icon: HandCoins },
-  { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { label: 'Settings', href: '/settings', icon: Settings },
+  { label: 'AI', href: '/dashboard/ai-assistant', icon: Sparkles },
+  { label: 'Contributions', href: '/dashboard/contributions', icon: HandCoins },
+  { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

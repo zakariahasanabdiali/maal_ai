@@ -346,7 +346,7 @@ export default function AnalyticsPage() {
                 </p>
               </div>
               <Button asChild size="sm" className="ml-auto bg-accent text-accent-foreground hover:bg-accent/90">
-                <a href="/ai-assistant">Ask the AI</a>
+                <a href="/dashboard/ai-assistant">Ask the AI</a>
               </Button>
             </div>
           </Card>

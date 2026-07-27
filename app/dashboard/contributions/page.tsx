@@ -68,7 +68,7 @@ export default function ContributionsPage() {
         description="Track community contributions across all your savings groups."
         actions={
           <Button asChild size="sm" variant="outline">
-            <Link href="/analytics">
+            <Link href="/dashboard/analytics">
               View analytics <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>
           </Button>
@@ -163,7 +163,7 @@ export default function ContributionsPage() {
                   return (
                     <TableRow key={c.id} className="cursor-pointer">
                       <TableCell>
-                        <Link href={`/contributions/${c.id}`} className="block">
+                        <Link href={`/dashboard/contributions/${c.id}`} className="block">
                           <div className="flex items-center gap-2.5">
                             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-gradient text-[0.65rem] font-bold text-primary-foreground">
                               {c.memberAvatar}
@@ -214,7 +214,7 @@ export default function ContributionsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
                 >
-                  <Link href={`/contributions/${c.id}`}>
+                  <Link href={`/dashboard/contributions/${c.id}`}>
                     <Card className="p-4">
                       <div className="flex items-center gap-3">
                         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-gradient text-xs font-bold text-primary-foreground">

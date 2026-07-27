@@ -90,7 +90,7 @@ export function NotificationBell() {
               return (
                 <li key={n.id}>
                   <Link
-                    href={n.href ?? '/notifications'}
+                    href={n.href ?? '/dashboard/notifications'}
                     onClick={() => {
                       markRead.mutate(n.id);
                       setOpen(false);
@@ -129,7 +129,7 @@ export function NotificationBell() {
 
         <div className="border-t p-2">
           <Button asChild variant="ghost" size="sm" className="w-full">
-            <Link href="/notifications" onClick={() => setOpen(false)}>
+            <Link href="/dashboard/notifications" onClick={() => setOpen(false)}>
               View all notifications
             </Link>
           </Button>

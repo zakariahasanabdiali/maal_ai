@@ -7,18 +7,17 @@ import { dashboardNav } from '@/lib/nav';
 import { Logo } from '@/components/logo';
 import { Sparkles, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const logout = useAuthStore((s) => s.logout);
-  const user = useAuthStore((s) => s.user);
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Signed out successfully');
     router.push('/');
   };

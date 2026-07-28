@@ -32,11 +32,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { StatCard } from '@/components/dashboard/stat-card';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { formatCurrency, percent } from '@/lib/format';
-import { mockBudget, budgetMeta } from '@/mock/budget';
 import type { BudgetCategory } from '@/types';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
 
 const presetCategories = [
   'Food & Groceries',
@@ -50,28 +52,55 @@ const presetCategories = [
 ];
 
 export default function BudgetPage() {
-  const [budgets, setBudgets] = useState<BudgetCategory[]>(mockBudget);
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [limit, setLimit] = useState('');
 
-  const totalSpent = budgets.reduce((s, b) => s + b.spent, 0);
-  const totalLimit = budgets.reduce((s, b) => s + b.limit, 0);
+  const { data: budgets = [] } = useQuery<BudgetCategory[]>({
+    queryKey: ['budgets'],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: contributions } = await supabase
+        .from('contributions')
+        .select('amount, status, created_at')
+        .eq('contributor_id', user.id)
+        .eq('status', 'COMPLETED');
+      if (!contributions) return [];
+      const total = contributions.reduce((s, r) => s + Number(r.amount), 0);
+      return [{
+        id: 'all',
+        name: 'Total Contributions',
+        limit: total * 2,
+        spent: total,
+        color: 'chart-1',
+      }];
+    },
+  });
+
+  const addBudget = useMutation({
+    mutationFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['budgets'] });
+      toast.success(`Budget for ${name} created`);
+      setName('');
+      setLimit('');
+      setOpen(false);
+    },
+  });
+
+  const totalSpent = budgets.reduce((s: number, b: BudgetCategory) => s + b.spent, 0);
+  const totalLimit = budgets.reduce((s: number, b: BudgetCategory) => s + b.limit, 0);
 
   const handleAdd = () => {
     if (!name || !limit) return;
-    const newBudget: BudgetCategory = {
-      id: `b${Date.now()}`,
-      name,
-      limit: Number(limit),
-      spent: 0,
-      color: 'chart-4',
-    };
-    setBudgets((b) => [...b, newBudget]);
-    toast.success(`Budget for ${name} created`);
-    setName('');
-    setLimit('');
-    setOpen(false);
+    addBudget.mutate();
   };
 
   return (
@@ -140,7 +169,7 @@ export default function BudgetPage() {
 
       {/* Category cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {budgets.map((b, i) => {
+        {budgets.map((b: BudgetCategory, i: number) => {
           const pct = percent(b.spent, b.limit);
           const over = b.spent > b.limit;
           const near = pct >= 80 && !over;

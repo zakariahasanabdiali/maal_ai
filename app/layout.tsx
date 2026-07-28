@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/query-provider';
+import { AuthProvider } from '@/store/auth-store';
+import { CurrencyProvider } from '@/store/currency-context';
 import { Toaster } from '@/components/ui/sonner';
 
 const manrope = Manrope({
@@ -50,10 +52,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </QueryProvider>
+          <AuthProvider>
+            <CurrencyProvider>
+              <QueryProvider>
+                {children}
+                <Toaster richColors position="top-right" />
+              </QueryProvider>
+            </CurrencyProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

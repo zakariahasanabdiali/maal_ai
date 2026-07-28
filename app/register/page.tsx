@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 import type { AccountType } from '@/types';
 
 const schema = z.object({
@@ -40,7 +40,7 @@ const accountOptions: { value: AccountType; label: string }[] = [
 
 export default function RegisterPage() {
   const router = useRouter();
-  const registerUser = useAuthStore((s) => s.register);
+  const { register: registerUser } = useAuth();
   const [showPwd, setShowPwd] = React.useState(false);
   const [serverError, setServerError] = React.useState('');
 
@@ -68,12 +68,14 @@ export default function RegisterPage() {
       await registerUser({
         name: values.name,
         email: values.email,
+        password: values.password,
         accountType: values.accountType,
       });
-      toast.success('Account created! Welcome to Maal-AI.');
-      router.push('/dashboard');
-    } catch {
-      setServerError('Something went wrong. Please try again.');
+      toast.success('Account created! Check your email to confirm, then sign in.');
+      router.push('/login');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setServerError(message);
     }
   };
 

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { NotificationBell } from '@/components/notification-bell';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 import { initials } from '@/lib/format';
 import {
   DropdownMenu,
@@ -24,12 +24,11 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const { user, logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Signed out successfully');
     router.push('/');
   };
@@ -66,20 +65,20 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             >
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-brand-gradient text-xs font-bold text-primary-foreground">
-                  {initials(user.name)}
+                  {user ? initials(user.name) : '?'}
                 </AvatarFallback>
               </Avatar>
               <span className="hidden text-sm font-medium md:block">
-                {user.name.split(' ')[0]}
+                {user ? user.name.split(' ')[0] : ''}
               </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-sm font-medium">{user?.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {user.email}
+                  {user?.email}
                 </span>
               </div>
             </DropdownMenuLabel>

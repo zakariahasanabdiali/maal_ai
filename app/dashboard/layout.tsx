@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
 import { MobileNav } from '@/components/dashboard/mobile-nav';
@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -23,26 +24,28 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const logout = useAuthStore((s) => s.logout);
+  const { user, loading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  // Soft mock-auth guard: redirect to login if not authenticated.
-  // We allow a brief mount so the persisted store hydrates.
   React.useEffect(() => {
-    const t = setTimeout(() => {
-      if (!isAuthenticated) router.replace('/login');
-    }, 50);
-    return () => clearTimeout(t);
-  }, [isAuthenticated, router]);
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Signed out successfully');
     router.push('/');
   };
 
-  if (!isAuthenticated) return null;
+  if (loading || !user) {
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

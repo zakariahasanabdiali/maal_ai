@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 import { initials } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -50,17 +50,14 @@ const sections = [
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const user = useAuthStore((s) => s.user);
-  const updateProfile = useAuthStore((s) => s.updateProfile);
-  const setCurrency = useAuthStore((s) => s.setCurrency);
-  const logout = useAuthStore((s) => s.logout);
+  const { user, updateProfile, setCurrency, logout } = useAuth();
   const router = useRouter();
   const [active, setActive] = useState('profile');
-  const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
-  const [phone, setPhone] = useState(user.phone ?? '');
-  const [city, setCity] = useState(user.city);
-  const [currency, setCurrencyState] = useState(user.currency);
+  const [name, setName] = useState(user?.name ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
+  const [city, setCity] = useState(user?.city ?? '');
+  const [currency, setCurrencyState] = useState(user?.currency ?? 'USD');
 
   const [notif, setNotif] = useState({
     budgetAlerts: true,
@@ -70,9 +67,13 @@ export default function SettingsPage() {
     productNews: false,
   });
 
-  const saveProfile = () => {
-    updateProfile({ name, email, phone, city });
-    toast.success('Profile updated');
+  const saveProfile = async () => {
+    try {
+      await updateProfile({ name, email, phone, city });
+      toast.success('Profile updated');
+    } catch {
+      toast.error('Failed to update profile');
+    }
   };
 
   const handleCurrency = (c: 'USD' | 'SOS') => {
@@ -81,11 +82,19 @@ export default function SettingsPage() {
     toast.success(`Currency set to ${c === 'USD' ? 'US Dollar' : 'Somali Shilling'}`);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success('Signed out');
     router.push('/');
   };
+
+  if (!user) {
+    return (
+      <div className="grid place-items-center py-20 text-sm text-muted-foreground">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

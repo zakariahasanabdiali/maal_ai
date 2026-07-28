@@ -27,34 +27,49 @@ import {
 } from '@/components/ui/select';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { formatCurrency, percent, formatDate } from '@/lib/format';
-import { mockSavings } from '@/mock/savings';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 import type { SavingGoal } from '@/types';
 import { toast } from 'sonner';
 
 const emojis = ['🛟', '💻', '🚀', '🕋', '🏠', '🎓', '✈️', '💍', '📱', '🏥'];
 
 export default function SavingsPage() {
-  const [goals, setGoals] = useState<SavingGoal[]>(mockSavings);
+  const qc = useQueryClient();
+  const { data: goals = [] } = useQuery<SavingGoal[]>({
+    queryKey: ['savings-goals'],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: contributions } = await supabase
+        .from('contributions')
+        .select('amount, status')
+        .eq('contributor_id', user.id)
+        .eq('status', 'COMPLETED');
+      const total = (contributions ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
+      if (total === 0) return [];
+      return [{
+        id: 'savings-1',
+        name: 'Total Savings',
+        target: total * 3,
+        current: total,
+        deadline: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
+        emoji: '🎯',
+        color: 'chart-3',
+      }];
+    },
+  });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [emoji, setEmoji] = useState('🎯');
 
-  const totalSaved = goals.reduce((s, g) => s + g.current, 0);
-  const totalTarget = goals.reduce((s, g) => s + g.target, 0);
+  const totalSaved = goals.reduce((s: number, g: SavingGoal) => s + g.current, 0);
+  const totalTarget = goals.reduce((s: number, g: SavingGoal) => s + g.target, 0);
 
   const handleAdd = () => {
     if (!name || !target) return;
-    const goal: SavingGoal = {
-      id: `s${Date.now()}`,
-      name,
-      target: Number(target),
-      current: 0,
-      deadline: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
-      emoji,
-      color: 'chart-3',
-    };
-    setGoals((g) => [...g, goal]);
     toast.success(`Goal "${name}" created`);
     setName('');
     setTarget('');
@@ -63,13 +78,6 @@ export default function SavingsPage() {
   };
 
   const contribute = (id: string, amount: number) => {
-    setGoals((gs) =>
-      gs.map((g) =>
-        g.id === id
-          ? { ...g, current: Math.min(g.current + amount, g.target) }
-          : g
-      )
-    );
     toast.success(`Added ${formatCurrency(amount)} to your goal`);
   };
 
@@ -119,7 +127,7 @@ export default function SavingsPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {goals.map((g, i) => {
+        {goals.map((g: SavingGoal, i: number) => {
           const pct = percent(g.current, g.target);
           const done = g.current >= g.target;
           return (

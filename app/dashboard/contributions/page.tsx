@@ -38,7 +38,7 @@ import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { useContributions, useContributionSummary } from '@/hooks/use-contributions';
-import { contributionMethodMeta, contributionStatusMeta } from '@/mock/contributions';
+import { contributionMethodMeta, contributionStatusMeta } from '@/lib/meta';
 import { formatCurrency, formatDate, relativeDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 

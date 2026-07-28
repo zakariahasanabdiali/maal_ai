@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Search,
   ArrowDownUp,
@@ -34,8 +34,10 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
-import { mockTransactions, categoryMeta } from '@/mock/transactions';
+import { categoryMeta } from '@/lib/meta';
 import type { Transaction, TransactionStatus } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 type SortKey = 'date' | 'amount';
@@ -54,13 +56,49 @@ export default function TransactionsPage() {
   const [asc, setAsc] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  const { data: transactions, isLoading } = useQuery<Transaction[]>({
+    queryKey: ['transactions'],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('contributions')
+        .select(`
+          id,
+          amount,
+          currency,
+          status,
+          note,
+          created_at,
+          group:groups ( id, name )
+        `)
+        .eq('contributor_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((row: Record<string, unknown>): Transaction => {
+        const group = row.group as Record<string, string> | null;
+        const statusStr = String(row.status).toLowerCase();
+        return {
+          id: row.id as string,
+          date: row.created_at as string,
+          description: group?.name ?? 'Contribution',
+          category: 'community' as const,
+          amount: Number(row.amount),
+          currency: (row.currency as string) ?? 'USD',
+          status: (['completed', 'pending', 'failed'].includes(statusStr) ? statusStr : 'pending') as TransactionStatus,
+          merchant: group?.name,
+        } as Transaction;
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (!isLoading) setLoading(false);
+  }, [isLoading]);
 
   const filtered = useMemo(() => {
-    let list = mockTransactions.filter((t) => {
+    let list = (transactions ?? []).filter((t: Transaction) => {
       const matchesQuery =
         !query ||
         t.description.toLowerCase().includes(query.toLowerCase()) ||
@@ -191,7 +229,7 @@ export default function TransactionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((t) => (
+              {filtered.map((t: Transaction) => (
                 <TransactionRow key={t.id} t={t} />
               ))}
             </TableBody>
@@ -212,7 +250,7 @@ export default function TransactionsPage() {
             description="Try adjusting your search or filters."
           />
         ) : (
-          filtered.map((t) => <TransactionCardMobile key={t.id} t={t} />)
+          filtered.map((t: Transaction) => <TransactionCardMobile key={t.id} t={t} />)
         )}
       </div>
     </div>

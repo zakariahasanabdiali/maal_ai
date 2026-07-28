@@ -49,7 +49,7 @@ import { ErrorState } from '@/components/error-state';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { useMembers } from '@/hooks/use-members';
 import { membersService } from '@/services/members.service';
-import { memberRoleMeta, memberStatusMeta } from '@/mock/members';
+import { memberRoleMeta, memberStatusMeta } from '@/lib/meta';
 import { formatCurrency, formatDate, relativeDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';

@@ -43,7 +43,7 @@ import {
   savingsTrend,
   balanceSummary,
   aiInsights,
-} from '@/mock/analytics';
+} from '@/lib/analytics-data';
 import { toast } from 'sonner';
 
 const tooltipStyle = {

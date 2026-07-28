@@ -12,6 +12,7 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createClient } from '@/lib/supabase/client';
 
 const schema = z
   .object({
@@ -38,10 +39,17 @@ export default function ResetPasswordPage() {
     defaultValues: { password: '', confirm: '' },
   });
 
-  const onSubmit = async () => {
-    await new Promise((r) => setTimeout(r, 900));
-    toast.success('Password reset successfully');
-    router.push('/login');
+  const onSubmit = async (values: FormValues) => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: values.password });
+      if (error) throw error;
+      toast.success('Password reset successfully');
+      router.push('/login');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to reset password.';
+      toast.error(message);
+    }
   };
 
   return (

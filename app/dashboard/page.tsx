@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -35,17 +36,17 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ReceiptUpload } from '@/components/receipt-upload';
+import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { cn } from '@/lib/utils';
 import { formatCurrency, relativeDate } from '@/lib/format';
-import { categoryMeta } from '@/mock/transactions';
-import { mockTransactions } from '@/mock/transactions';
-import { mockSavings } from '@/mock/savings';
-import {
-  balanceSummary,
-  monthlyCashflow,
-  categorySpending,
-  aiInsights,
-} from '@/mock/analytics';
+import { categoryMeta } from '@/lib/meta';
+import { useAuth } from '@/store/auth-store';
+import { useContributions } from '@/hooks/use-contributions';
+import { useContributionSummary } from '@/hooks/use-contributions';
+import { useAnalyticsSummary } from '@/hooks/use-analytics';
+import { useMonthlyAnalytics } from '@/hooks/use-analytics';
+import { useContributionByCategory } from '@/hooks/use-analytics';
+import type { AiInsight } from '@/types';
 
 const insightIcon = {
   warning: AlertTriangle,
@@ -59,14 +60,37 @@ const insightTone = {
   success: 'border-success/30 bg-success/10 text-success',
 };
 
+const defaultInsights: AiInsight[] = [
+  {
+    id: 'i1',
+    type: 'info',
+    title: 'Welcome to Maal-AI',
+    body: 'Your dashboard will populate with AI insights once you have contribution data. Start by joining or creating a community group.',
+  },
+];
+
 export default function DashboardPage() {
-  const recent = mockTransactions.slice(0, 6);
+  const { user } = useAuth();
+  const { data: summary } = useContributionSummary();
+  const { data: analyticsSummary } = useAnalyticsSummary();
+  const { data: monthly } = useMonthlyAnalytics();
+  const { data: categories } = useContributionByCategory();
+  const { data: contributionsData } = useContributions({ page: 1, pageSize: 6 });
+
+  const insights: AiInsight[] = defaultInsights;
+  const recentContributions = contributionsData?.data ?? [];
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
+
+  const balance = (summary?.totalAllTime ?? 0) * 0.3;
+  const monthlyIncome = summary?.totalThisMonth ?? 0;
+  const monthlyExpenses = 0;
+  const savings = 0;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Welcome back, Aamina — here's your financial overview."
+        description={`Welcome back, ${firstName} — here's your financial overview.`}
         actions={
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
             <Link href="/dashboard/reports">View reports</Link>
@@ -78,46 +102,46 @@ export default function DashboardPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-1">
           <BalanceCard
-            balance={balanceSummary.balance}
-            monthlyIncome={balanceSummary.monthlyIncome}
-            monthlyExpenses={balanceSummary.monthlyExpenses}
-            savings={balanceSummary.savings}
+            balance={balance}
+            monthlyIncome={monthlyIncome}
+            monthlyExpenses={monthlyExpenses}
+            savings={savings}
           />
         </div>
         <div className="grid grid-cols-2 gap-4 lg:col-span-2 lg:grid-cols-2 xl:grid-cols-4">
           <StatCard
             index={0}
             label="Monthly Income"
-            value={formatCurrency(balanceSummary.monthlyIncome)}
+            value={formatCurrency(monthlyIncome)}
             icon={TrendingUp}
-            change={`${balanceSummary.incomeChange}%`}
+            change={analyticsSummary?.revenueChange ? `${analyticsSummary.revenueChange}%` : undefined}
             trend="up"
             accent="success"
           />
           <StatCard
             index={1}
             label="Monthly Expenses"
-            value={formatCurrency(balanceSummary.monthlyExpenses)}
+            value={formatCurrency(monthlyExpenses)}
             icon={TrendingDown}
-            change={`${balanceSummary.expensesChange}%`}
+            change={undefined}
             trend="down"
             accent="destructive"
           />
           <StatCard
             index={2}
             label="Total Savings"
-            value={formatCurrency(balanceSummary.savings)}
+            value={formatCurrency(savings)}
             icon={PiggyBank}
-            change={`${balanceSummary.savingsChange}%`}
+            change={undefined}
             trend="up"
             accent="accent"
           />
           <StatCard
             index={3}
-            label="Active Budgets"
-            value="6"
+            label="Active Groups"
+            value={String(analyticsSummary?.activeGroups ?? 0)}
             icon={Wallet}
-            change="On track"
+            change={undefined}
             trend="up"
             accent="primary"
           />
@@ -131,7 +155,7 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold">AI Financial Insights</h2>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
-          {aiInsights.map((ins, i) => {
+          {insights.map((ins, i) => {
             const Icon = insightIcon[ins.type];
             return (
               <motion.div
@@ -166,71 +190,61 @@ export default function DashboardPage() {
             <div>
               <h3 className="text-base font-semibold">Cash Flow</h3>
               <p className="text-xs text-muted-foreground">
-                Income vs expenses over 7 months
+                Contributions over recent months
               </p>
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-chart-1" /> Income
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-chart-5" /> Expenses
+                <span className="h-2.5 w-2.5 rounded-full bg-chart-1" /> Contributions
               </span>
             </div>
           </div>
           <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyCashflow} margin={{ left: -16, right: 8, top: 8 }}>
-                <defs>
-                  <linearGradient id="gIncome" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gExpense" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--chart-5))" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="hsl(var(--chart-5))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => `$${v / 1000}k`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number) => formatCurrency(v)}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="income"
-                  stroke="hsl(var(--chart-1))"
-                  strokeWidth={2.5}
-                  fill="url(#gIncome)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expenses"
-                  stroke="hsl(var(--chart-5))"
-                  strokeWidth={2.5}
-                  fill="url(#gExpense)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {monthly && monthly.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthly} margin={{ left: -16, right: 8, top: 8 }}>
+                  <defs>
+                    <linearGradient id="gContrib" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--chart-1))" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `$${v / 1000}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                    formatter={(v: number) => formatCurrency(v)}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="contributions"
+                    stroke="hsl(var(--chart-1))"
+                    strokeWidth={2.5}
+                    fill="url(#gContrib)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <LoadingSkeleton className="h-full w-full rounded-xl" />
+            )}
           </div>
         </Card>
 
@@ -238,122 +252,126 @@ export default function DashboardPage() {
           <h3 className="text-base font-semibold">Spending by Category</h3>
           <p className="text-xs text-muted-foreground">This month</p>
           <div className="mt-2 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categorySpending}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={48}
-                  outerRadius={72}
-                  paddingAngle={3}
-                  strokeWidth={0}
-                >
-                  {categorySpending.map((c) => (
-                    <Cell key={c.name} fill={c.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number) => formatCurrency(v)}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {categories && categories.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categories}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={48}
+                    outerRadius={72}
+                    paddingAngle={3}
+                    strokeWidth={0}
+                  >
+                    {categories.map((c: typeof categories[number]) => (
+                      <Cell key={c.name} fill={`hsl(var(--${c.color}))`} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 12,
+                      fontSize: 12,
+                    }}
+                    formatter={(v: number) => formatCurrency(v)}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <LoadingSkeleton className="h-full w-full rounded-xl" />
+            )}
           </div>
-          <ul className="mt-3 space-y-1.5">
-            {categorySpending.slice(0, 4).map((c) => (
-              <li key={c.name} className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
-                  {c.name}
-                </span>
-                <span className="font-medium">{formatCurrency(c.value, 'USD', { compact: true })}</span>
-              </li>
-            ))}
-          </ul>
+          {categories && categories.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {categories.slice(0, 4).map((c: typeof categories[number]) => (
+                <li key={c.name} className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: `hsl(var(--${c.color}))` }} />
+                    {c.name}
+                  </span>
+                  <span className="font-medium">{formatCurrency(c.value, 'USD', { compact: true })}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       </div>
 
-      {/* Recent transactions + savings goals */}
+      {/* Recent contributions */}
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold">Recent Transactions</h3>
+            <h3 className="text-base font-semibold">Recent Contributions</h3>
             <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/transactions">
+              <Link href="/dashboard/contributions">
                 View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
           </div>
-          <ul className="mt-4 divide-y">
-            {recent.map((t) => {
-              const meta = categoryMeta[t.category];
-              const positive = t.amount > 0;
-              return (
-                <li key={t.id} className="flex items-center gap-3 py-3">
-                  <span
-                    className={cn(
-                      'grid h-9 w-9 shrink-0 place-items-center rounded-lg',
-                      positive
-                        ? 'bg-success/10 text-success'
-                        : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{t.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {meta.label} · {relativeDate(t.date)}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      'shrink-0 text-sm font-semibold',
-                      positive ? 'text-success' : 'text-foreground'
-                    )}
-                  >
-                    {formatCurrency(t.amount, t.currency, { signed: true })}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          {recentContributions.length > 0 ? (
+            <ul className="mt-4 divide-y">
+              {recentContributions.map((t: typeof recentContributions[number]) => {
+                const positive = t.amount > 0;
+                return (
+                  <li key={t.id} className="flex items-center gap-3 py-3">
+                    <span
+                      className={cn(
+                        'grid h-9 w-9 shrink-0 place-items-center rounded-lg',
+                        positive
+                          ? 'bg-success/10 text-success'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{t.groupName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.status} · {relativeDate(t.date)}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        'shrink-0 text-sm font-semibold',
+                        positive ? 'text-success' : 'text-foreground'
+                      )}
+                    >
+                      {formatCurrency(t.amount, t.currency, { signed: true })}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              No contributions yet. Join a group to get started.
+            </p>
+          )}
         </Card>
 
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold">Saving Goals</h3>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/savings">
-                <ArrowRight className="h-3.5 w-3.5" />
+            <h3 className="text-base font-semibold">Quick Actions</h3>
+          </div>
+          <div className="mt-4 space-y-3">
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link href="/dashboard/contributions">
+                <Wallet className="mr-2 h-4 w-4" /> View contributions
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link href="/dashboard/community">
+                <PiggyBank className="mr-2 h-4 w-4" /> Community groups
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link href="/dashboard/ai-assistant">
+                <Sparkles className="mr-2 h-4 w-4" /> Ask Maal-AI
               </Link>
             </Button>
           </div>
-          <ul className="mt-4 space-y-4">
-            {mockSavings.slice(0, 3).map((g) => {
-              const pct = Math.round((g.current / g.target) * 100);
-              return (
-                <li key={g.id}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <span>{g.emoji}</span> {g.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{pct}%</span>
-                  </div>
-                  <Progress value={pct} className="mt-2 h-2" />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatCurrency(g.current)} of {formatCurrency(g.target)}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
         </Card>
       </div>
 

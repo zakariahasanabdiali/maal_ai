@@ -29,7 +29,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from '@/hooks/use-notifications';
-import { notificationTypeMeta } from '@/mock/notifications';
+import { notificationTypeMeta } from '@/lib/meta';
 import { relativeDate, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 

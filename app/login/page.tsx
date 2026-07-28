@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -25,7 +25,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const login = useAuthStore((s) => s.login);
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
   const [showPwd, setShowPwd] = React.useState(false);
   const [serverError, setServerError] = React.useState('');
 
@@ -43,9 +44,11 @@ export default function LoginPage() {
     try {
       await login(values.email, values.password);
       toast.success('Welcome back to Maal-AI!');
-      router.push('/dashboard');
-    } catch {
-      setServerError('Something went wrong. Please try again.');
+      const redirect = searchParams.get('redirect') ?? '/dashboard';
+      router.push(redirect);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid email or password.';
+      setServerError(message);
     }
   };
 

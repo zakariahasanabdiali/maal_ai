@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -39,7 +39,8 @@ import {
 import { StatCard } from '@/components/dashboard/stat-card';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate, initials } from '@/lib/format';
-import { mockCommunity, communityMembers } from '@/mock/community';
+import { useQuery } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
 import type { CommunityGroup } from '@/types';
 import { toast } from 'sonner';
 
@@ -50,13 +51,115 @@ const memberStatus = {
 };
 
 export default function CommunityPage() {
-  const [groups] = useState<CommunityGroup[]>(mockCommunity);
-  const [selected, setSelected] = useState<CommunityGroup>(mockCommunity[0]);
+  const { data: groups = [] } = useQuery<CommunityGroup[]>({
+    queryKey: ['community-groups'],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: memberships } = await supabase
+        .from('memberships')
+        .select(`
+          id,
+          role,
+          status,
+          group:groups (
+            id,
+            name,
+            description,
+            contribution_target_amount,
+            currency,
+            created_at
+          )
+        `)
+        .eq('user_id', user.id);
+      if (!memberships) return [];
+      return memberships.map((m: Record<string, unknown>) => {
+        const group = m.group as Record<string, unknown> | null;
+        return {
+          id: group?.id as string ?? '',
+          name: group?.name as string ?? '',
+          description: (group?.description as string) ?? '',
+          members: 1,
+          monthlyContribution: Number(group?.contribution_target_amount ?? 0),
+          totalPool: Number(group?.contribution_target_amount ?? 0),
+          goal: '',
+          color: 'chart-1',
+          yourContribution: 0,
+          nextPayout: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+          admin: '',
+        } as CommunityGroup;
+      });
+    },
+  });
+
+  const { data: communityMembers = [] } = useQuery<Array<{ id: string; name: string; avatar: string; contributed: number; status: string }>>({
+    queryKey: ['community-members'],
+    queryFn: async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: memberships } = await supabase
+        .from('memberships')
+        .select(`
+          id,
+          status,
+          user:users ( id, email )
+        `)
+        .eq('user_id', user.id)
+        .limit(10);
+      if (!memberships) return [];
+      return memberships.map((m: Record<string, unknown>) => {
+        const u = m.user as Record<string, string> | null;
+        const statusStr = String(m.status).toLowerCase();
+        return {
+          id: m.id as string,
+          name: u?.email ?? 'Unknown',
+          avatar: '',
+          contributed: 0,
+          status: ['paid', 'pending', 'partial'].includes(statusStr) ? statusStr : 'pending',
+        };
+      });
+    },
+  });
+
+  const [selected, setSelected] = useState<CommunityGroup | null>(null);
   const [open, setOpen] = useState(false);
 
-  const totalPool = groups.reduce((s, g) => s + g.totalPool, 0);
-  const totalMembers = groups.reduce((s, g) => s + g.members, 0);
-  const yourMonthly = groups.reduce((s, g) => s + g.yourContribution, 0);
+  useEffect(() => {
+    if (groups.length > 0 && !selected) setSelected(groups[0]);
+  }, [groups, selected]);
+
+  const totalPool = groups.reduce((s: number, g: CommunityGroup) => s + g.totalPool, 0);
+  const totalMembers = groups.reduce((s: number, g: CommunityGroup) => s + g.members, 0);
+  const yourMonthly = groups.reduce((s: number, g: CommunityGroup) => s + g.yourContribution, 0);
+
+  if (groups.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Community Finance"
+          description="Manage ayuuto savings groups and track collective contributions."
+          actions={
+            <Button size="sm" onClick={() => setOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> New group
+            </Button>
+          }
+        />
+        <Card className="p-12 text-center">
+          <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 text-sm font-medium">No community groups yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create or join a group to start saving together.
+          </p>
+          <Button className="mt-4" size="sm" onClick={() => setOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Create your first group
+          </Button>
+        </Card>
+        <NewGroupDialog open={open} setOpen={setOpen} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -107,7 +210,7 @@ export default function CommunityPage() {
           <h2 className="text-sm font-semibold text-muted-foreground">
             Your groups
           </h2>
-          {groups.map((g, i) => (
+            {groups.map((g: CommunityGroup, i: number) => (
             <motion.button
               key={g.id}
               initial={{ opacity: 0, x: -12 }}
@@ -116,7 +219,7 @@ export default function CommunityPage() {
               onClick={() => setSelected(g)}
               className={cn(
                 'w-full rounded-xl border p-4 text-left transition-all hover:shadow-premium-sm',
-                selected.id === g.id
+                selected?.id === g.id
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
                   : 'bg-card hover:border-muted-foreground/30'
               )}
@@ -136,19 +239,20 @@ export default function CommunityPage() {
 
         {/* Selected group detail */}
         <div className="space-y-5 lg:col-span-2">
-          <Card className="overflow-hidden">
-            <div className="bg-brand-gradient p-5 text-primary-foreground">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-lg font-bold">{selected.name}</h2>
-                  <p className="mt-1 text-sm text-primary-foreground/80">
-                    {selected.description}
-                  </p>
+          {selected && (
+            <Card className="overflow-hidden">
+              <div className="bg-brand-gradient p-5 text-primary-foreground">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold">{selected.name}</h2>
+                    <p className="mt-1 text-sm text-primary-foreground/80">
+                      {selected.description}
+                    </p>
+                  </div>
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15">
+                    <Users className="h-5 w-5 text-accent" />
+                  </span>
                 </div>
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/15">
-                  <Users className="h-5 w-5 text-accent" />
-                </span>
-              </div>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <div className="rounded-lg bg-white/10 p-2.5 backdrop-blur">
                   <p className="text-[0.65rem] text-primary-foreground/70">Members</p>
@@ -175,15 +279,8 @@ export default function CommunityPage() {
                 <p className="text-sm font-semibold">Community Goal</p>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {selected.goal}
+                {selected.goal || 'No specific goal set for this group.'}
               </p>
-
-              <div className="mt-4 flex items-center gap-2">
-                <Crown className="h-4 w-4 text-accent" />
-                <p className="text-sm">
-                  Admin: <span className="font-medium">{selected.admin}</span>
-                </p>
-              </div>
 
               <div className="mt-4 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-warning" />
@@ -200,13 +297,14 @@ export default function CommunityPage() {
                   {formatCurrency(selected.yourContribution)}
                 </p>
                 <Progress
-                  value={100}
+                  value={selected.monthlyContribution > 0 ? Math.min(100, (selected.yourContribution / selected.monthlyContribution) * 100) : 0}
                   className="mt-2 h-2"
                 />
-                <p className="mt-1.5 text-xs text-success">Fully contributed</p>
               </div>
             </div>
           </Card>
+
+          )}
 
           {/* Members */}
           <Card className="p-5">
@@ -214,9 +312,10 @@ export default function CommunityPage() {
             <p className="text-xs text-muted-foreground">
               Contribution tracking for this cycle
             </p>
+            {communityMembers.length > 0 ? (
             <ul className="mt-4 space-y-2">
-              {communityMembers.map((m) => {
-                const st = memberStatus[m.status as keyof typeof memberStatus];
+              {communityMembers.map((m: { id: string; name: string; avatar: string; contributed: number; status: string }) => {
+                const st = memberStatus[m.status as keyof typeof memberStatus] ?? memberStatus.pending;
                 const Icon = st.icon;
                 return (
                   <li
@@ -244,6 +343,9 @@ export default function CommunityPage() {
                 );
               })}
             </ul>
+            ) : (
+              <p className="mt-6 text-center text-sm text-muted-foreground">No members in this group yet.</p>
+            )}
             <Button
               className="mt-4 w-full"
               variant="outline"
@@ -255,7 +357,13 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* New group modal */}
+      <NewGroupDialog open={open} setOpen={setOpen} />
+    </div>
+  );
+}
+
+function NewGroupDialog({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => void }) {
+  return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
@@ -308,6 +416,5 @@ export default function CommunityPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
   );
 }

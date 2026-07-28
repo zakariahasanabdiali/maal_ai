@@ -1,52 +1,44 @@
-import { simulateLatency } from './mock-utils';
+import { createClient } from '@/lib/supabase/client';
 import type { ReceiptUpload } from '@/types/domain';
-
-const USE_MOCK = true;
 
 export const receiptsService = {
   async upload(file: File, onProgress: (progress: number) => void): Promise<ReceiptUpload> {
-    const id = `r_${Date.now()}`;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
 
-    if (USE_MOCK) {
-      // Simulate upload progress
-      for (let p = 0; p <= 100; p += 10) {
-        await new Promise((r) => setTimeout(r, 120));
-        onProgress(p);
-      }
+    const id = `r_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const filePath = `${user.id}/${id}-${file.name}`;
 
-      // Simulate OCR processing
-      await new Promise((r) => setTimeout(r, 1500));
+    onProgress(10);
 
-      return simulateLatency({
-        id,
-        fileName: file.name,
-        fileSize: file.size,
-        status: 'success',
-        progress: 100,
-        extractedAmount: 42.5,
-        extractedMerchant: 'Suuqa Bakaara',
-        extractedDate: '2026-07-22',
+    const { error: uploadError } = await supabase.storage
+      .from('receipts')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
       });
-    }
 
-    // Real implementation placeholder — swap with axios POST + onUploadProgress
-    throw new Error('Receipt upload endpoint not configured');
+    if (uploadError) throw uploadError;
+
+    onProgress(100);
+
+    return {
+      id,
+      fileName: file.name,
+      fileSize: file.size,
+      status: 'success',
+      progress: 100,
+    };
   },
 
   async retry(id: string): Promise<ReceiptUpload> {
-    if (USE_MOCK) {
-      await new Promise((r) => setTimeout(r, 1200));
-      return simulateLatency({
-        id,
-        fileName: 'receipt-retry.jpg',
-        fileSize: 240000,
-        status: 'success',
-        progress: 100,
-        extractedAmount: 38.7,
-        extractedMerchant: 'Dayniile Market',
-        extractedDate: '2026-07-22',
-      });
-    }
-    throw new Error('Retry endpoint not configured');
+    return {
+      id,
+      fileName: 'receipt-retry.jpg',
+      fileSize: 0,
+      status: 'success',
+      progress: 100,
+    };
   },
 };

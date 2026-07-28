@@ -26,7 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { ErrorState } from '@/components/error-state';
 import { LoadingSkeleton } from '@/components/loading-skeleton';
 import { useContribution } from '@/hooks/use-contributions';
-import { contributionMethodMeta, contributionStatusMeta } from '@/mock/contributions';
+import { contributionMethodMeta, contributionStatusMeta } from '@/lib/meta';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 

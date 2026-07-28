@@ -12,6 +12,7 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createClient } from '@/lib/supabase/client';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -32,9 +33,18 @@ export default function ForgotPasswordPage() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    await new Promise((r) => setTimeout(r, 900));
-    setSent(values.email);
-    toast.success('Reset link sent');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSent(values.email);
+      toast.success('Reset link sent');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to send reset link.';
+      toast.error(message);
+    }
   };
 
   if (sent) {

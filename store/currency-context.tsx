@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 import type { Currency } from '@/lib/format';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/store/auth-store';
 
 interface CurrencyCtx {
   currency: Currency;
@@ -12,8 +12,7 @@ interface CurrencyCtx {
 const Ctx = createContext<CurrencyCtx | null>(null);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const userCurrency = useAuthStore((s) => s.user.currency);
-  const setStoreCurrency = useAuthStore((s) => s.setCurrency);
+  const { currency: userCurrency, setCurrency: setStoreCurrency } = useAuth();
   const [currency, setCurrencyState] = useState<Currency>(userCurrency);
 
   const setCurrency = (c: Currency) => {

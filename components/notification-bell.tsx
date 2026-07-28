@@ -17,7 +17,7 @@ import {
 import { useUnreadCount } from '@/hooks/use-notifications';
 import { relativeDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { notificationTypeMeta } from '@/mock/notifications';
+import { notificationTypeMeta } from '@/lib/meta';
 import {
   Wallet,
   Target,

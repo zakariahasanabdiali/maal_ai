@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Play } from 'lucide-react';
 import { BalanceCard } from '@/components/dashboard/balance-card';
-import { balanceSummary } from '@/mock/analytics';
+import { balanceSummary } from '@/lib/analytics-data';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },

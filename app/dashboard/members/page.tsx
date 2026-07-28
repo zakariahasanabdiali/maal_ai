@@ -2,23 +2,23 @@
 
 import * as React from 'react';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Users,
-  UserPlus,
-  Mail,
   Crown,
   Shield,
+  Users,
   TrendingUp,
-  Calendar,
+  Mail,
+  UserPlus,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 import { PageHeader } from '@/components/page-header';
+import { StatCard } from '@/components/dashboard/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Select,
   SelectContent,
@@ -29,10 +29,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -42,18 +42,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SearchInput } from '@/components/search-input';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Pagination } from '@/components/pagination';
+import { SearchInput } from '@/components/search-input';
 import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
-import { StatCard } from '@/components/dashboard/stat-card';
 import { useMembers } from '@/hooks/use-members';
 import { membersService } from '@/services/members.service';
 import { memberRoleMeta, memberStatusMeta } from '@/lib/meta';
-import { formatCurrency, formatDate, relativeDate } from '@/lib/format';
+import { formatCurrency, relativeDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { mockCommunity } from '@/mock/community';
+import { createClient } from '@/lib/supabase/client';
 
 const PAGE_SIZE = 8;
 
@@ -66,6 +66,24 @@ export default function MembersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteGroup, setInviteGroup] = useState('');
+
+  const { data: groups } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ['members-groups'],
+    queryFn: async () => {
+      const client = createClient();
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return [];
+      const { data: memberships } = await client
+        .from('memberships')
+        .select('group:groups ( id, name )')
+        .eq('user_id', user.id);
+      return (memberships ?? []).flatMap((m: Record<string, unknown>) => {
+        const group = m.group as { id: string; name: string } | { id: string; name: string }[] | null;
+        if (Array.isArray(group)) return group;
+        return group ? [group] : [];
+      });
+    },
+  });
 
   const { data, isLoading, isError, refetch } = useMembers({
     page,
@@ -113,7 +131,7 @@ export default function MembersPage() {
         <StatCard index={0} label="Total Members" value={data ? String(data.total) : '—'} icon={Users} accent="primary" />
         <StatCard index={1} label="Active" value={String(activeCount)} icon={TrendingUp} accent="success" />
         <StatCard index={2} label="Total Contributed" value={formatCurrency(totalContributed)} icon={Mail} accent="accent" />
-        <StatCard index={3} label="Groups" value={String(mockCommunity.length)} icon={Users} accent="primary" />
+        <StatCard index={3} label="Groups" value={String(groups?.length ?? 0)} icon={Users} accent="primary" />
       </div>
 
       <Card className="p-4">
@@ -289,7 +307,7 @@ export default function MembersPage() {
                   <SelectValue placeholder="Choose a group" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCommunity.map((g) => (
+                  {(groups ?? []).map((g: { id: string; name: string }) => (
                     <SelectItem key={g.id} value={g.id}>
                       {g.name}
                     </SelectItem>

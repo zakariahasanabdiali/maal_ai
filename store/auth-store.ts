@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import type { User } from '@/types';
 import type { Currency } from '@/lib/format';
 import { createClient } from '@/lib/supabase/client';
@@ -133,10 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev ? { ...prev, currency: c } : prev));
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, session, loading, login, register, logout, updateProfile, setCurrency, currency }}>
-      {children}
-    </AuthContext.Provider>
+  return React.createElement(
+    AuthContext.Provider,
+    { value: { user, session, loading, login, register, logout, updateProfile, setCurrency, currency } },
+    children
   );
 }
 
